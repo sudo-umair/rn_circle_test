@@ -1,5 +1,5 @@
 import {Slider} from '@miblanchard/react-native-slider';
-import {useRef, useState} from 'react';
+import {Fragment, useRef, useState} from 'react';
 import {
   Button,
   PanResponder,
@@ -8,6 +8,7 @@ import {
   Text,
   View,
   Alert,
+  Image,
 } from 'react-native';
 import ViewShot from 'react-native-view-shot';
 
@@ -18,6 +19,7 @@ export default function App() {
   const [isDrawing, setIsDrawing] = useState<boolean>(false);
   const [path, setPath] = useState<Path>([]);
   const [tolerance, setTolerance] = useState<number>(4);
+  const [imagePath, setImagePath] = useState<string>('');
 
   const ref = useRef<ViewShot>(null);
 
@@ -75,8 +77,7 @@ export default function App() {
       return;
     }
     ref.current.capture?.().then(uri => {
-      const fileUri = uri;
-      console.log(fileUri);
+      setImagePath(uri);
     });
   };
 
@@ -86,47 +87,54 @@ export default function App() {
 
   return (
     <SafeAreaView style={styles.root}>
-      <View style={styles.root}>
-        <ViewShot
-          ref={ref}
-          style={{flex: 1}}
-          options={{
-            format: 'png',
-            fileName: `${Date.now()}.png`,
-            quality: 0.9,
-          }}>
-          <View style={styles.container} {...panResponder.panHandlers}>
-            {path.map((point, index) => (
-              <View
-                key={index}
-                style={{
-                  position: 'absolute',
-                  left: point.x - 4,
-                  top: point.y - 4,
-                  width: 8,
-                  height: 8,
-                  borderRadius: 4,
-                  backgroundColor: 'red',
-                }}
-              />
-            ))}
+      {imagePath ? (
+        <Fragment>
+          <Text style={styles.text}>Screenshot</Text>
+          <Image source={{uri: imagePath}} style={{flex: 1}} />
+          <Button title="Clear" onPress={() => setImagePath('')} />
+        </Fragment>
+      ) : (
+        <Fragment>
+          <ViewShot
+            ref={ref}
+            style={{flex: 1}}
+            options={{
+              format: 'png',
+              fileName: `${Date.now()}.png`,
+              quality: 0.9,
+            }}>
+            <View style={styles.container} {...panResponder.panHandlers}>
+              {path.map((point, index) => (
+                <View
+                  key={index}
+                  style={{
+                    position: 'absolute',
+                    left: point.x - 4,
+                    top: point.y - 4,
+                    width: 8,
+                    height: 8,
+                    borderRadius: 4,
+                    backgroundColor: 'red',
+                  }}
+                />
+              ))}
+            </View>
+          </ViewShot>
+          <View style={styles.slider}>
+            <Text style={styles.text}>Tolerance: {tolerance}</Text>
+            <Slider
+              value={tolerance}
+              startFromZero
+              step={1}
+              minimumValue={1}
+              maximumValue={10}
+              onValueChange={v => setTolerance(v[0])}
+              thumbTintColor={'rgba(0, 0, 0, 0.5)'}
+            />
           </View>
-        </ViewShot>
-      </View>
-      <View style={styles.slider}>
-        <Text style={styles.text}>Tolerance: {tolerance}</Text>
-        <Slider
-          value={tolerance}
-          startFromZero
-          step={1}
-          minimumValue={1}
-          maximumValue={10}
-          onValueChange={v => setTolerance(v[0])}
-          thumbTintColor={'rgba(0, 0, 0, 0.5)'}
-        />
-      </View>
-
-      <Button title="Clear" onPress={clearDrawing} />
+          <Button title="Clear" onPress={clearDrawing} />
+        </Fragment>
+      )}
     </SafeAreaView>
   );
 }
@@ -135,6 +143,7 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#fff',
+    padding: 10,
   },
   container: {
     position: 'absolute',
